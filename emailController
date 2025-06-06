@@ -1,0 +1,50 @@
+package com.suman.www.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.suman.www.entity.EmailRequest;
+import com.suman.www.entity.EmailStatus;
+import com.suman.www.service.EmailService;
+
+@CrossOrigin(origins = "http://localhost:52330/")
+@RestController
+@RequestMapping("/api/email")
+public class EmailController {
+
+    @Autowired
+    private EmailService emailService;
+
+    @PostMapping("/send")
+    public ResponseEntity<String> sendEmail(@RequestBody EmailRequest request) {
+        emailService.sendEmail(request);
+        return ResponseEntity.ok("Request accepted");
+    }
+
+    @GetMapping("/status/{id}")
+    public ResponseEntity<EmailStatus> getStatus(@PathVariable String id) {
+        EmailStatus status = emailService.getStatus(id);
+        return status == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(status);
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<String> updateEmail(@RequestBody EmailRequest request) {
+        emailService.updateEmail(request);
+        return ResponseEntity.ok("Email updated");
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteEmail(@PathVariable String id) {
+        emailService.deleteEmail(id);
+        return ResponseEntity.ok("Email deleted");
+    }
+}
