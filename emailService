@@ -1,0 +1,76 @@
+package com.suman.www.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import com.suman.www.entity.EmailRequest;
+import com.suman.www.entity.EmailStatus;
+import com.suman.www.repo.EmailRequestRepository;
+import com.suman.www.repo.EmailStatusRepository;
+
+import jakarta.mail.internet.MimeMessage;
+
+@Service
+public class EmailService {
+
+    @Autowired
+    private EmailRequestRepository requestRepo;
+
+    @Autowired
+    private EmailStatusRepository statusRepo;
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    public void sendEmail(EmailRequest req) {
+        if (req.getId() == null || req.getId().isEmpty()) {
+            req.generateId();  // Ensure ID is set
+        }
+        if (statusRepo.existsById(req.getId())) return; // idempotent
+
+        requestRepo.save(req);
+        EmailStatus status = new EmailStatus();
+        status.setId(req.getId());
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false);
+            helper.setTo(req.getToAddress());
+            helper.setSubject(req.getSubject());
+            helper.setText(req.getBody(), false);
+            helper.setFrom("your-verified-email@example.com"); // Replace with your email
+
+            mailSender.send(message);
+
+            status.setStatus("SENT");
+            status.setAttempts(1);
+
+        } catch (Exception e) {
+            status.setStatus("FAILED");
+            status.setAttempts(1);
+            e.printStackTrace();
+        }
+
+        statusRepo.save(status);
+    }
+
+    public EmailStatus getStatus(String id) {
+        return statusRepo.findById(id).orElse(null);
+    }
+
+    public void updateEmail(EmailRequest updated) {
+        requestRepo.findById(updated.getId()).ifPresent(existing -> {
+            existing.setToAddress(updated.getToAddress());
+            existing.setSubject(updated.getSubject());
+            existing.setBody(updated.getBody());
+            requestRepo.save(existing);
+        });
+    }
+
+    public void deleteEmail(String id) {
+        requestRepo.deleteById(id);
+        statusRepo.deleteById(id);
+    }
+}
