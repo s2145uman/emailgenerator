@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h2 {
+            text-align: center;
+        }
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e0f7fa;
+            border-left: 5px solid #00796b;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h2>Send Email</h2>
+    <input type="text" id="id" placeholder="ID (Leave blank to auto-generate)">
+    <input type="text" id="to" placeholder="To Email">
+    <input type="text" id="subject" placeholder="Subject">
+    <textarea id="body" placeholder="Message"></textarea>
+    <button onclick="sendEmail()">Send</button>
+    <button onclick="updateEmail()">Update</button>
+    <button onclick="deleteEmail()">Delete</button>
+    <hr>
+    <input type="text" id="statusId" placeholder="Check Status ID">
+    <button onclick="checkStatus()">Check Status</button>
+    <div id="status"></div>
+
+    <script>
+        function sendEmail() {
+            const data = getEmailData();
+            if(!data.toAddress) { alert("To Email is required"); return; }
+            fetch('http://localhost:8181/api/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(res => res.text()).then(alert);
+        }
+
+        function updateEmail() {
+            const data = getEmailData();
+            if(!data.id) { alert("ID is required to update"); return; }
+            fetch('http://localhost:8181/api/email/update', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(res => res.text()).then(alert);
+        }
+
+        function deleteEmail() {
+            const id = document.getElementById('id').value;
+            if (!id) { alert("ID is required to delete"); return; }
+            fetch(`http://localhost:8181/api/email/delete/${id}`, {
+                method: 'DELETE'
+            }).then(res => res.text()).then(alert);
+        }
+
+        function checkStatus() {
+            const id = document.getElementById('statusId').value;
+            if (!id) { alert("Enter an ID to check status"); return; }
+            fetch(`http://localhost:8181/api/email/status/${id}`)
+                .then(res => {
+                    if (res.status === 404) {
+                        return Promise.reject('Status not found');
+                    }
+                    return res.json();
+                })
+                .then(data => document.getElementById('status').innerText = JSON.stringify(data, null, 2))
+                .catch(err => alert(err));
+        }
+
+        function getEmailData() {
+            return {
+                id: document.getElementById('id').value || null,
+                toAddress: document.getElementById('to').value,
+                subject: document.getElementById('subject').value,
+                body: document.getElementById('body').value
+            };
+        }
+    </script>
+</body>
+</html>
